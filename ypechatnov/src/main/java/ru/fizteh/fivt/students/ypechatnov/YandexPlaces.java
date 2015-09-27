@@ -8,9 +8,12 @@ package main.java.ru.fizteh.fivt.students.ypechatnov;
 import java.io.*;
 import java.net.*;
 import javax.xml.parsers.*;
+import org.apache.commons.io.IOUtils;
 import org.xml.sax.InputSource;
 import org.w3c.dom.*;
 import org.xml.sax.SAXException;
+import twitter4j.JSONObject;
+
 
 public class YandexPlaces {
 
@@ -18,6 +21,7 @@ public class YandexPlaces {
     private boolean ioError;
     private boolean strangeError;
     private Document doc;
+
 
     public boolean isSmthFailed() {
         return connectionError || ioError || strangeError;
@@ -41,15 +45,15 @@ public class YandexPlaces {
         a2 = Double.parseDouble(b2.split(" ")[1]) / k;
         d = Math.acos(Math.sin(p1) * Math.sin(p2)
                 + StrictMath.cos(p1) * Math.cos(p2) * Math.cos(a2 - a1));
-        return d * r;
+        return d * r / new Double(2.0);
     }
 
     public double[][] calcBounds() {
         String b1, b2;
         b1 = doc.getElementsByTagName("lowerCorner").item(0).getTextContent();
         b2 = doc.getElementsByTagName("upperCorner").item(0).getTextContent();
-        double[][] bnds =  {{Double.parseDouble(b1.split(" ")[0]), Double.parseDouble(b1.split(" ")[1])},
-                {Double.parseDouble(b2.split(" ")[0]), Double.parseDouble(b2.split(" ")[1])}};
+        double[][] bnds =  {{Double.parseDouble(b1.split(" ")[1]), Double.parseDouble(b1.split(" ")[0])},
+                {Double.parseDouble(b2.split(" ")[1]), Double.parseDouble(b2.split(" ")[0])}};
         return bnds;
     }
 
@@ -57,6 +61,14 @@ public class YandexPlaces {
         connectionError = false;
         ioError = false;
         strangeError = false;
+
+        if (place.equals("nearby")) {
+            place = findSelf();
+        }
+        if (place == null) {t
+            connectionError = true;
+            return;
+        }
 
         StringBuilder result = new StringBuilder();
         try {
@@ -85,5 +97,17 @@ public class YandexPlaces {
         } catch (SAXException e) {
             strangeError = true;
         }
+    }
+
+    // not a Yandex, but.....
+    private static String findSelf() {
+        JSONObject jsonObject;
+        String url = "http://ipinfo.io/json";
+        try {
+            return new JSONObject(IOUtils.toString(new URL(url))).getString("city");
+        } catch (Exception e) {
+        }
+        return null;
+
     }
 }

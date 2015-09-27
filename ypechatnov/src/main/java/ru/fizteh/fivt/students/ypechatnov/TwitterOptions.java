@@ -16,7 +16,11 @@ public class TwitterOptions {
         return twquery != null;
     }
     public String getQuery() {
-        return twquery;
+        if (twquery != null) {
+            return twquery;
+        } else {
+            return "";
+        }
     }
 
     @Parameter(names = {"-p", "--place"}, description = "Place of tweets")
@@ -56,7 +60,10 @@ public class TwitterOptions {
         return limitint;
     }
 
-    @Parameter(names = {"-h", "--help"}, description = "Help", help = true)
+    @Parameter(names = {"-h", "--help"}, description = "Help. "
+            + "For extra information see: "
+            + "https://github.com/akormushin/fizteh-java-2015/blob/master/tasks/01-TwitterStream.md",
+            help = true)
     private boolean showHelp;
 
     public boolean isNeedToExit() {
