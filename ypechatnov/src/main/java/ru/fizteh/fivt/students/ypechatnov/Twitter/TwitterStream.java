@@ -72,7 +72,9 @@ public class TwitterStream {
             try {
                 YandexPlaces places = new YandexPlaces();
                 places.setPlaceQuery(opt.getPlace());
-                filterQuery.locations(places.calcBounds());
+                double bnds[][] = places.calcBounds();
+                double revBnds[][] = {{bnds[0][1], bnds[0][0]}, {bnds[1][1], bnds[1][0]}};
+                filterQuery.locations(revBnds);
             } catch (PlaceNotFoundException e) {
                 System.err.println("Problem with --place option. Program will be continued without it.");
             }
@@ -104,9 +106,9 @@ public class TwitterStream {
         }
         System.out.println("There are " + String.valueOf(tweets.size())
                 + " tweets about your query without limitation");
-        /*if (opt.isSetLimit()) {
+        if (opt.isSetLimit()) {
             tweets = tweets.subList(0, Math.min(tweets.size(), opt.getLimit()));
-        }*/
+        }
         if (tweets.size() > 0) {
             for (Status t : tweets) {
                 showOneTweet(t, TweetFormatter.ShowTime.yes);
@@ -134,9 +136,9 @@ public class TwitterStream {
                 YandexPlaces places = new YandexPlaces();
                 places.setPlaceQuery(opt.getPlace());
                 double[] coord = places.calcCoord();
-                System.err.println("Query geo is: lat = " + String.valueOf(coord[1])
+                /*System.err.println("Query geo is: lat = " + String.valueOf(coord[1])
                         + " long = " + String.valueOf(coord[0])
-                        + " radius = " + String.valueOf(places.calcRadiusKm()));
+                        + " radius = " + String.valueOf(places.calcRadiusKm()));*/
                 query.setGeoCode(new GeoLocation(coord[1], coord[0]), places.calcRadiusKm(), Query.Unit.mi);
             } catch (PlaceNotFoundException e) {
                 System.err.println("Sorry but --place option is failed, and run will be continued without it");

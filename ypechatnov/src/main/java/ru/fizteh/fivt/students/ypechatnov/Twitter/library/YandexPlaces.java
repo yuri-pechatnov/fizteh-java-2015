@@ -12,6 +12,7 @@ import org.apache.commons.io.IOUtils;
 import org.xml.sax.InputSource;
 import org.w3c.dom.*;
 import twitter4j.JSONObject;
+import twitter4j.Place;
 
 
 public class YandexPlaces {
@@ -27,6 +28,7 @@ public class YandexPlaces {
             throw new PlaceNotFoundException();
         }
     }
+
     public Double calcRadiusKm() throws PlaceNotFoundException {
         try {
             String lowerCorner, upperCorner;
@@ -54,8 +56,8 @@ public class YandexPlaces {
             String b1, b2;
             b1 = doc.getElementsByTagName("lowerCorner").item(0).getTextContent();
             b2 = doc.getElementsByTagName("upperCorner").item(0).getTextContent();
-            double[][] bnds = {{Double.parseDouble(b1.split(" ")[1]), Double.parseDouble(b1.split(" ")[0])},
-                    {Double.parseDouble(b2.split(" ")[1]), Double.parseDouble(b2.split(" ")[0])}};
+            double[][] bnds = {{Double.parseDouble(b1.split(" ")[0]), Double.parseDouble(b1.split(" ")[1])},
+                    {Double.parseDouble(b2.split(" ")[0]), Double.parseDouble(b2.split(" ")[1])}};
             return bnds;
         } catch (Exception e) {
             System.err.println(e);
@@ -63,13 +65,30 @@ public class YandexPlaces {
         }
     }
 
-    public YandexPlaces() { }
+    public YandexPlaces() {
+    }
 
     public YandexPlaces setPlaceQuery(String place) throws PlaceNotFoundException {
+        if (place.equals("nearby")) {
+            place = findSelfLocation();
+        }
+        return setPlaceQueryByGeoCodeXML(retrieveGeoCodeXML(place));
+    }
+
+    public YandexPlaces setPlaceQueryByGeoCodeXML(String geoCode) throws PlaceNotFoundException {
         try {
-            if (place.equals("nearby")) {
-                place = findSelfLocation();
-            }
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            doc = builder.parse(new InputSource(new StringReader(geoCode)));
+            return this;
+        } catch (Exception e) {
+            System.err.println(e);
+            throw new PlaceNotFoundException();
+        }
+    }
+
+    public String retrieveGeoCodeXML(String place) throws PlaceNotFoundException {
+        try {
             StringBuilder result = new StringBuilder();
             URL url = new URL("https://geocode-maps.yandex.ru/1.x/?&geocode=" + place + "&results=1");
             System.err.println("Query to YandexMaps: " + url.toString());
@@ -81,18 +100,14 @@ public class YandexPlaces {
                 result.append(line + "\n");
             }
             rd.close();
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder builder = factory.newDocumentBuilder();
-            doc = builder.parse(new InputSource(new StringReader(result.toString())));
-            return this;
+            return result.toString();
         } catch (Exception e) {
-            System.err.println(e);
             throw new PlaceNotFoundException();
         }
     }
 
     // not a Yandex, but.....
-    private String findSelfLocation() throws PlaceNotFoundException {
+    public String findSelfLocation() throws PlaceNotFoundException {
         try {
             JSONObject jsonObject;
             String url = "http://ipinfo.io/json";
