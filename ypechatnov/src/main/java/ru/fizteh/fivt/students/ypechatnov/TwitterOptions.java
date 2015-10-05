@@ -6,6 +6,9 @@ package main.java.ru.fizteh.fivt.students.ypechatnov;
 
 
 import com.beust.jcommander.*;
+import main.java.ru.fizteh.fivt.students.ypechatnov.exceptions.TwitterParameterException;
+import main.java.ru.fizteh.fivt.students.ypechatnov.validators.NonNegativeInteger;
+
 
 public class TwitterOptions {
     @Parameter(names = {"-q", "--query"}, description = "Query"
@@ -49,12 +52,12 @@ public class TwitterOptions {
     }
 
     @Parameter(names = {"-l", "--limit"}, description = "Amount tweets"
-            + "Incompatible with --stream option.")
-    private String limit;
-    private int limitint;
+            + "Incompatible with --stream option.",
+            validateWith = NonNegativeInteger.class)
+    private Integer limitint = -1;
 
     public boolean isSetLimit() {
-        return limit != null;
+        return limitint != null && limitint != -1;
     }
     public int getLimit() {
         return limitint;
@@ -66,39 +69,29 @@ public class TwitterOptions {
             help = true)
     private boolean showHelp;
 
-    public boolean isNeedToExit() {
-        return showHelp || incorrectOptions;
+    public boolean isNeedToShowHelp() {
+        return showHelp;
     }
-
-    private boolean incorrectOptions;
 
     private JCommander jc;
 
-    TwitterOptions(String[] args) {
-        incorrectOptions = false;
+    public void usage() {
+        jc.usage();
+    }
+
+    public TwitterOptions parse(String[] args) throws TwitterParameterException {
         jc = new JCommander(this);
         jc.setProgramName("TwitterStream");
         try {
             jc.parse(args);
-        } catch (com.beust.jcommander.ParameterException exc) {
-            incorrectOptions = true;
-        }
-        if (isSetLimit()) {
-            try {
-                limitint = Integer.valueOf(limit);
-            } catch (NumberFormatException e) {
-                incorrectOptions = true;
-            }
+        } catch (Exception exc) {
+            throw new TwitterParameterException();
         }
         if (isSetLimit() && isStreaming()) {
-            incorrectOptions = true;
+            throw new TwitterParameterException();
         }
-        if (incorrectOptions) {
-            System.out.println("Incorrect options. Please, read the usage:");
-        }
-        if (showHelp || incorrectOptions) {
-            jc.usage();
-            System.exit(0);
-        }
+        return this;
     }
+
+    TwitterOptions() { }
 }

@@ -5,11 +5,13 @@ import java.lang.Thread.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.*;
+
+import main.java.ru.fizteh.fivt.students.ypechatnov.exceptions.PlaceNotFoundException;
+import main.java.ru.fizteh.fivt.students.ypechatnov.exceptions.TwitterParameterException;
 import twitter4j.*;
 
 public class TwitterStream {
     private static TwitterOptions opt;
-    private static TwitterFactory tf;
     private static Twitter twitter;
     private static Query query;
     private static FilterQuery filterQuery;
@@ -20,47 +22,47 @@ public class TwitterStream {
         yes, no
     };
 
-    public static void main(String[] args) throws TwitterException {
-        opt = new TwitterOptions(args);
-        if (opt.isNeedToExit()) {
-            System.exit(0);
+    public static void main(String[] args) {
+        opt = new TwitterOptions();
+        try {
+            opt.parse(args);
+        } catch (TwitterParameterException e) {
+            opt.usage();
+            return;
+        }
+        if (opt.isNeedToShowHelp()) {
+            opt.usage();
+            return;
         }
 
-        /*There is a class TwitterConfigurationBuilder, NOW IT'S DISABLED
-            which have method,
-            which returns ConfigurationBuilder class with authentication data */
-        tf = new TwitterFactory(/*TwitterConfigurationBuilder.getConfig().build()*/);
-        twitter = tf.getInstance();
-
         if (opt.isStreaming()) {
-            startStreaming();
+            try {
+                startStreaming();
+            } catch (InterruptedException e) {
+                System.err.println("Interrupt occured\n"
+                    + "Streaming finished =(");
+                System.err.println(e);
+                System.exit(-1);
+            }
         } else {
             genAndShowResult();
         }
-        System.exit(0);
     }
 
-    private static void startStreaming() {
+    private static void startStreaming() throws InterruptedException {
         ts = new TwitterStreamFactory().getInstance();
         TwitterListener tl = new TwitterListener();
-        byte[] smb = {'g'};
-        tl.init();
-        ts.addListener(tl);
+        ts.addListener(tl.init());
         makeFilterQuery();
         ts.filter(filterQuery);
         final Integer ms2s = new Integer(1000);
-        try {
-            while (true) {
-                Thread.sleep(ms2s);
-                System.err.println("Iteration");
-                String outStr = tl.pollTweetStr();
-                if (outStr != null) {
-                    System.out.println(outStr);
-                }
+        while (true) {
+            Thread.sleep(ms2s);
+            System.err.println("Iteration");
+            String outStr = tl.pollTweetStr();
+            if (outStr != null) {
+                System.out.println(outStr);
             }
-        } catch (InterruptedException e) {
-            System.err.println("Interrupt occured");
-            System.exit(-1);
         }
     }
 
@@ -69,10 +71,11 @@ public class TwitterStream {
         filterQuery = new FilterQuery();
         filterQuery.track(opt.getQuery());
         if (opt.isSetPlace()) {
-            YandexPlaces places = new YandexPlaces(opt.getPlace());
-            if (!places.isSmthFailed()) {
+            try {
+                YandexPlaces places = new YandexPlaces();
+                places.setPlaceQuery(opt.getPlace());
                 filterQuery.locations(places.calcBounds());
-            } else {
+            } catch (PlaceNotFoundException e) {
                 System.err.println("Problem with --place option. Program will be continued without it.");
             }
         }
@@ -81,6 +84,13 @@ public class TwitterStream {
     public static void genAndShowResult() {
         makeQuery();
         try {
+            /*There is a class TwitterConfigurationBuilder (NOW IT'S DISABLED),
+                which have method,
+                which returns ConfigurationBuilder class with authentication data
+
+                new TwitterFactory(TwitterConfigurationBuilder.getConfig().build())
+            */
+            twitter = new TwitterFactory().getInstance();
             queryResult = twitter.search(query);
         } catch (TwitterException e) {
             System.err.println("Some problem with query");
@@ -90,12 +100,12 @@ public class TwitterStream {
     }
 
     public static void showTweets(List<Status> tweets) {
-        System.out.println("Ururu");
         if (opt.isHidingRetweets()) {
             tweets = tweets.stream()
                     .filter(p -> !p.isRetweet()).collect(Collectors.toList());
         }
-        System.out.println(tweets.size());
+        System.out.println("There are " + String.valueOf(tweets.size())
+                + " tweets about your query without limitation");
         if (opt.isSetLimit()) {
             tweets = tweets.subList(0, Math.min(tweets.size(), opt.getLimit()));
         }
@@ -133,11 +143,11 @@ public class TwitterStream {
     }
 
     private static String timeInReadableFormat(Date date) {
-        final long ms2s = 1000, s2m = 60, m2h = 60, h2d = 24;
+        final long ms2s = 1000L, s2m = 60L, m2h = 60L, h2d = 24L;
         long delta = (System.currentTimeMillis() - date.getTime());
         delta /= ms2s; // Now delta in seconds
         delta /= s2m; // Now delta in minutes
-        if (delta < new Long(2L)) {
+        if (delta < 2L) {
             return "только что";
         }
         if (delta < m2h) {
@@ -148,13 +158,13 @@ public class TwitterStream {
             return String.valueOf(delta) + " час" + calcNumEnding(delta, "", "а", "ов") + " назад";
         }
         delta /= h2d; // Now in days
-        return String.valueOf(delta) + " " + calcNumEnding(delta, "день", "дня", "дней") + " назад";
+        return String.valueOf(delta) + " д" + calcNumEnding(delta, "ень", "ня", "ней") + " назад";
     }
 
     public static String calcNumEnding(Long number, String p1, String p24, String p50) {
         final Long ten = 10L, one = 1L, five = 5L;
         number = number % ten;
-        if (number == one) {
+        if (number.equals(one)) {
             return p1;
         }
         if (one < number && number < five) {
@@ -169,20 +179,21 @@ public class TwitterStream {
         System.err.println(opt.getQuery().length());
         query = new Query(opt.getQuery() + clauseStr(opt.isHidingRetweets(),
                 clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
+        if (opt.isSetLimit()) {
+            query.setCount(opt.getLimit());
+        }
         if (opt.isSetPlace()) {
-            YandexPlaces places = new YandexPlaces(opt.getPlace());
-            double[] coord = places.calcCoord();
-            if (!places.isSmthFailed()) {
+            try {
+                YandexPlaces places = new YandexPlaces();
+                places.setPlaceQuery(opt.getPlace());
+                double[] coord = places.calcCoord();
                 System.err.println("Query geo is: lat = " + String.valueOf(coord[1])
-                                + " long = " + String.valueOf(coord[0])
-                                + " radius = " + String.valueOf(places.calcRadiusKm()));
+                        + " long = " + String.valueOf(coord[0])
+                        + " radius = " + String.valueOf(places.calcRadiusKm()));
                 query.setGeoCode(new GeoLocation(coord[1], coord[0]), places.calcRadiusKm(), Query.Unit.mi);
-            } else {
+            } catch (PlaceNotFoundException e) {
                 System.err.println("Sorry but --place option is failed, and run will be continued without it");
             }
-            System.out.print(coord[0]);
-            System.out.print(" ");
-            System.out.println(coord[1]);
         }
     }
 
@@ -194,14 +205,3 @@ public class TwitterStream {
         }
     }
 }
-/*
-    twitter4j.properties класть в src/main/resources
-    Добавить в git.ignore
-
-    @Override
-    public void onStatus(Status status) {
-    Что такое @Override?
-
-    В java можно рантайм получать метаинформацию о классе
-
- */

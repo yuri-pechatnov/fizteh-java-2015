@@ -17,8 +17,9 @@ public class TwitterListener extends StatusAdapter {
     private ConcurrentLinkedQueue<String> outs;
     private static final int LIMIT = 1000000;
 
-    public void init() {
+    public TwitterListener init() {
         outs = new ConcurrentLinkedQueue<String>();
+        return this;
     }
 
     public void addTweetStr(String str) {
