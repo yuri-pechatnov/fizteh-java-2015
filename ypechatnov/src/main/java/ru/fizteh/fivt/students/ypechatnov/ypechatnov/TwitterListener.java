@@ -1,7 +1,5 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov;
+package main.java.ru.fizteh.fivt.students.ypechatnov.ypechatnov;
 
-
-import java.util.*;
 
 import twitter4j.StallWarning;
 import twitter4j.Status;

@@ -1,4 +1,4 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov;
+package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
 /**
  * Created by ura on 27.09.15.
@@ -6,12 +6,12 @@ package main.java.ru.fizteh.fivt.students.ypechatnov;
 
 
 import com.beust.jcommander.*;
-import main.java.ru.fizteh.fivt.students.ypechatnov.exceptions.TwitterParameterException;
-import main.java.ru.fizteh.fivt.students.ypechatnov.validators.NonNegativeInteger;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.validators.NonNegativeInteger;
 
 
 public class TwitterOptions {
-    @Parameter(names = {"-q", "--query"}, description = "Query"
+    @Parameter(names = { "-q", "--query" }, description = "Query"
             + "Example \"Физтех\"")
     private String twquery;
 
@@ -26,7 +26,7 @@ public class TwitterOptions {
         }
     }
 
-    @Parameter(names = {"-p", "--place"}, description = "Place of tweets")
+    @Parameter(names = { "-p", "--place" }, description = "Place of tweets")
     private String place;
 
     public boolean isSetPlace() {
@@ -36,7 +36,7 @@ public class TwitterOptions {
         return place;
     }
 
-    @Parameter(names = {"-s", "--stream"}, description = "Is streaming or not"
+    @Parameter(names = { "-s", "--stream" }, description = "Is streaming or not"
             + "Incompatible with --limit option")
     private boolean asStream;
 
@@ -44,14 +44,14 @@ public class TwitterOptions {
         return asStream;
     }
 
-    @Parameter(names = {"--hideRetweets"}, description = "Hide retweets")
+    @Parameter(names = { "--hideRetweets" }, description = "Hide retweets")
     private boolean hideRetweets;
 
     public boolean isHidingRetweets() {
         return hideRetweets;
     }
 
-    @Parameter(names = {"-l", "--limit"}, description = "Amount tweets"
+    @Parameter(names = { "-l", "--limit" }, description = "Amount tweets"
             + "Incompatible with --stream option.",
             validateWith = NonNegativeInteger.class)
     private Integer limitint = -1;
@@ -63,7 +63,7 @@ public class TwitterOptions {
         return limitint;
     }
 
-    @Parameter(names = {"-h", "--help"}, description = "Help. "
+    @Parameter(names = { "-h", "--help" }, description = "Help. "
             + "For extra information see: "
             + "https://github.com/akormushin/fizteh-java-2015/blob/master/tasks/01-TwitterStream.md",
             help = true)
@@ -93,5 +93,5 @@ public class TwitterOptions {
         return this;
     }
 
-    TwitterOptions() { }
+    public TwitterOptions() { }
 }

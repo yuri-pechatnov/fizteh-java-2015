@@ -1,4 +1,4 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.exceptions;
+package main.java.ru.fizteh.fivt.students.ypechatnov.ypechatnov.exceptions;
 
 /**
  * Created by ura on 04.10.15.

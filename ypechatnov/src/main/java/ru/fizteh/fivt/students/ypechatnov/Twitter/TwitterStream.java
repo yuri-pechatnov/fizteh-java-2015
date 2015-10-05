@@ -1,13 +1,15 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov;
+package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter;
 
 //import java.io.IOException;
-import java.lang.Thread.*;
 import java.util.*;
-import java.util.concurrent.*;
 import java.util.stream.*;
 
-import main.java.ru.fizteh.fivt.students.ypechatnov.exceptions.PlaceNotFoundException;
-import main.java.ru.fizteh.fivt.students.ypechatnov.exceptions.TwitterParameterException;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.TweetFormatter;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterListener;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterOptions;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.YandexPlaces;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.PlaceNotFoundException;
+import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
 import twitter4j.*;
 
 public class TwitterStream {
@@ -17,10 +19,6 @@ public class TwitterStream {
     private static FilterQuery filterQuery;
     private static QueryResult queryResult;
     private static twitter4j.TwitterStream ts;
-
-    public enum ShowTime {
-        yes, no
-    };
 
     public static void main(String[] args) {
         opt = new TwitterOptions();
@@ -106,79 +104,28 @@ public class TwitterStream {
         }
         System.out.println("There are " + String.valueOf(tweets.size())
                 + " tweets about your query without limitation");
-        if (opt.isSetLimit()) {
+        /*if (opt.isSetLimit()) {
             tweets = tweets.subList(0, Math.min(tweets.size(), opt.getLimit()));
-        }
+        }*/
         if (tweets.size() > 0) {
             for (Status t : tweets) {
-                showOneTweet(t, ShowTime.yes);
+                showOneTweet(t, TweetFormatter.ShowTime.yes);
             }
         } else {
             System.out.println("There are not any tweets.");
         }
     }
 
-    public static String oneTweetToStr(Status tweet, ShowTime showTime) {
-        final String dateHighlightBegin = "\u001B[32m", dateHighlightEnd = "\u001B[0m",
-                userHighlightBegin = "\u001B[33m", userHighlightEnd = "\u001B[0m";
-        String retweetPart = "";
-        if (tweet.isRetweet()) {
-            retweetPart = userHighlightBegin
-                    + "ретвитнул @" + tweet.getRetweetedStatus().getUser().getScreenName()
-                    + userHighlightEnd + ": ";
-            if (retweetPart == null) {
-                retweetPart = "";
-            }
-        }
-        return clauseStr(showTime == ShowTime.yes, dateHighlightBegin + "["
-                        + timeInReadableFormat(tweet.getCreatedAt()) + "]" + dateHighlightEnd + " ")
-                        + userHighlightBegin + "@" + tweet.getUser().getScreenName()
-                        + userHighlightEnd + ": " + retweetPart + tweet.getText()
-                        + clauseStr(tweet.isRetweeted(), "(" + tweet.getRetweetCount() + " ретвит"
-                        + calcNumEnding(new Long(tweet.getRetweetCount()), "", "а", "ов"));
-    }
-
-    private static void showOneTweet(Status tweet, ShowTime showTime) {
-        System.out.println(oneTweetToStr(tweet, showTime));
-    }
-
-    private static String timeInReadableFormat(Date date) {
-        final long ms2s = 1000L, s2m = 60L, m2h = 60L, h2d = 24L;
-        long delta = (System.currentTimeMillis() - date.getTime());
-        delta /= ms2s; // Now delta in seconds
-        delta /= s2m; // Now delta in minutes
-        if (delta < 2L) {
-            return "только что";
-        }
-        if (delta < m2h) {
-            return String.valueOf(delta) + " минут" + calcNumEnding(delta, "у", "ы", "") + " назад";
-        }
-        delta /= m2h; // Now in hours
-        if (delta < h2d) {
-            return String.valueOf(delta) + " час" + calcNumEnding(delta, "", "а", "ов") + " назад";
-        }
-        delta /= h2d; // Now in days
-        return String.valueOf(delta) + " д" + calcNumEnding(delta, "ень", "ня", "ней") + " назад";
-    }
-
-    public static String calcNumEnding(Long number, String p1, String p24, String p50) {
-        final Long ten = 10L, one = 1L, five = 5L;
-        number = number % ten;
-        if (number.equals(one)) {
-            return p1;
-        }
-        if (one < number && number < five) {
-            return p24;
-        }
-        return p50;
+    private static void showOneTweet(Status tweet, TweetFormatter.ShowTime showTime) {
+        System.out.println(TweetFormatter.oneTweetToStr(tweet, showTime));
     }
 
     public static void makeQuery() {
-        System.err.println("QueryStr is: " + opt.getQuery() + clauseStr(opt.isHidingRetweets(),
-                clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
+        System.err.println("QueryStr is: " + opt.getQuery() + TweetFormatter.clauseStr(opt.isHidingRetweets(),
+                TweetFormatter.clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
         System.err.println(opt.getQuery().length());
-        query = new Query(opt.getQuery() + clauseStr(opt.isHidingRetweets(),
-                clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
+        query = new Query(opt.getQuery() + TweetFormatter.clauseStr(opt.isHidingRetweets(),
+                TweetFormatter.clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
         if (opt.isSetLimit()) {
             query.setCount(opt.getLimit());
         }
@@ -197,11 +144,4 @@ public class TwitterStream {
         }
     }
 
-    private static String clauseStr(boolean clause, String str) {
-        if (clause) {
-            return str;
-        } else {
-            return "";
-        }
-    }
 }

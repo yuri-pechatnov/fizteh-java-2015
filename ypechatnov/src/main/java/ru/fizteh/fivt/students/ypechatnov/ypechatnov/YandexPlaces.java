@@ -1,10 +1,11 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov;
+package main.java.ru.fizteh.fivt.students.ypechatnov.ypechatnov;
 
 /**
  * Created by ura on 27.09.15.
  */
 
-import main.java.ru.fizteh.fivt.students.ypechatnov.exceptions.PlaceNotFoundException;
+import main.java.ru.fizteh.fivt.students.ypechatnov.ypechatnov.PlaceNotFoundException;
+import main.java.ru.fizteh.fivt.students.ypechatnov.ypechatnov.exceptions.PlaceNotFoundException;
 import java.io.*;
 import java.net.*;
 import javax.xml.parsers.*;

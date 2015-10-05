@@ -1,4 +1,4 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.validators;
+package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.validators;
 
 
 import com.beust.jcommander.IParameterValidator;
