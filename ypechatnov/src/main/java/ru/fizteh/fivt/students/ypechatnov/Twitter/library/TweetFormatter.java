@@ -1,4 +1,4 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library;
+package ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
 import twitter4j.Status;
 
@@ -12,13 +12,13 @@ public class TweetFormatter {
         yes, no
     };
 
-    public static final String
+    public final String
             DATE_HIGHLIGHT_BEGIN = "\u001B[32m",
             DATE_HIGHLIGHT_END = "\u001B[0m",
             USER_HIGHLIGHT_BEGIN = "\u001B[33m",
             USER_HIGHLIGHT_END = "\u001B[0m";
 
-    public static String oneTweetToStr(Status tweet, ShowTime showTime) {
+    public String oneTweetToStr(Status tweet, ShowTime showTime) {
         String retweetPart = "";
         if (tweet.isRetweet()) {
             retweetPart = "ретвитнул " + USER_HIGHLIGHT_BEGIN
@@ -36,7 +36,7 @@ public class TweetFormatter {
                     + calcNumEnding(new Long(tweet.getRetweetCount()), "", "а", "ов") + ")");
     }
 
-    public static String timeInReadableFormat(Date date) {
+    public String timeInReadableFormat(Date date) {
         final long ms2s = 1000L, s2m = 60L, m2h = 60L, h2d = 24L;
         long delta = (System.currentTimeMillis() - date.getTime());
         delta /= ms2s; // Now delta in seconds
@@ -58,7 +58,7 @@ public class TweetFormatter {
         return String.valueOf(delta) + " д" + calcNumEnding(delta, "ень", "ня", "ней") + " назад";
     }
 
-    public static String calcNumEnding(Long number, String p1, String p24, String p50) {
+    public String calcNumEnding(Long number, String p1, String p24, String p50) {
         final Long ten = 10L, one = 1L, five = 5L;
         if (((number / ten) % ten) == one) {
             return p50;
@@ -73,7 +73,7 @@ public class TweetFormatter {
         return p50;
     }
 
-    public static String clauseStr(boolean clause, String str) {
+    public String clauseStr(boolean clause, String str) {
         if (clause) {
             return str;
         } else {

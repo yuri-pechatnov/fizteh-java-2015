@@ -1,111 +1,123 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter;
+package ru.fizteh.fivt.students.ypechatnov.Twitter;
 
 //import java.io.IOException;
+import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.*;
 
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.TweetFormatter;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterListener;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterOptions;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.YandexPlaces;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.PlaceNotFoundException;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.TweetFormatter;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterListener;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterOptions;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterStreamAssistFactory;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.YandexPlaces;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.PlaceNotFoundException;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
 import twitter4j.*;
 
 public class TwitterStream {
-    private static TwitterOptions opt;
-    private static Twitter twitter;
-    private static Query query;
-    private static FilterQuery filterQuery;
-    private static QueryResult queryResult;
-    private static twitter4j.TwitterStream ts;
+    protected TwitterOptions opt;
+    protected Twitter twitter;
+    protected Query query;
+    protected FilterQuery filterQuery;
+    protected QueryResult queryResult;
+    protected twitter4j.TwitterStream ts;
+    protected TwitterStreamAssistFactory factory;
+    protected PrintStream err;
+    protected PrintStream out;
+    protected TweetFormatter tweetFormatter;
+
 
     public static void main(String[] args) {
-        opt = new TwitterOptions();
+        try {
+            TwitterStream twitterStream = new TwitterStream();
+            twitterStream.init();
+            twitterStream.startTwitterStream(args);
+
+        } catch (Exception e) {
+            System.err.println(e);
+            System.exit(-1);
+        }
+    }
+
+    protected void init() {
+        err = System.err;
+        out = System.out;
+        factory = new TwitterStreamAssistFactory();
+        tweetFormatter = factory.newTweetFormatter();
+        opt = factory.newTwitterOptions();
+    }
+
+    protected void startTwitterStream(String[] args) throws Exception {
         try {
             opt.parse(args);
         } catch (TwitterParameterException e) {
-            opt.usage();
+            opt.usage(out);
             return;
         }
         if (opt.isNeedToShowHelp()) {
-            opt.usage();
+            opt.usage(out);
             return;
         }
 
         if (opt.isStreaming()) {
-            try {
-                startStreaming();
-            } catch (InterruptedException e) {
-                System.err.println("Interrupt occured\n"
-                    + "Streaming finished =(");
-                System.err.println(e);
-                System.exit(-1);
-            }
+            startStreaming();
         } else {
             genAndShowResult();
         }
     }
 
-    private static void startStreaming() throws InterruptedException {
-        ts = new TwitterStreamFactory().getInstance();
-        TwitterListener tl = new TwitterListener();
-        ts.addListener(tl.init());
+    protected void startStreaming() throws InterruptedException {
+        ts = factory.newTwitterStream();
+        TwitterListener tl = factory.newTwitterListener();
+        ts.addListener(tl.init(opt.isHidingRetweets()));
         makeFilterQuery();
         ts.filter(filterQuery);
         final Integer ms2s = new Integer(1000);
         while (true) {
             Thread.sleep(ms2s);
-            System.err.println("Iteration");
+            err.println("Iteration");
             String outStr = tl.pollTweetStr();
             if (outStr != null) {
-                System.out.println(outStr);
+                out.println(outStr);
             }
         }
     }
 
 
-    private static void makeFilterQuery() {
-        filterQuery = new FilterQuery();
+    protected void makeFilterQuery() {
+        filterQuery = factory.newFilterQuery();
         filterQuery.track(opt.getQuery());
         if (opt.isSetPlace()) {
             try {
-                YandexPlaces places = new YandexPlaces();
+                YandexPlaces places = factory.newYandexPlaces();
                 places.setPlaceQuery(opt.getPlace());
                 double bnds[][] = places.calcBounds();
                 double revBnds[][] = {{bnds[0][1], bnds[0][0]}, {bnds[1][1], bnds[1][0]}};
                 filterQuery.locations(revBnds);
             } catch (PlaceNotFoundException e) {
-                System.err.println("Problem with --place option. Program will be continued without it.");
+                err.println("Problem with --place option. Program will be continued without it.");
             }
         }
     }
 
-    public static void genAndShowResult() {
+    protected void genAndShowResult() throws TwitterException {
         makeQuery();
         try {
-            /*There is a class TwitterConfigurationBuilder (NOW IT'S DISABLED),
-                which have method,
-                which returns ConfigurationBuilder class with authentication data
-
-                new TwitterFactory(TwitterConfigurationBuilder.getConfig().build())
-            */
-            twitter = new TwitterFactory().getInstance();
+            twitter = factory.newTwitter();
             queryResult = twitter.search(query);
-        } catch (TwitterException e) {
-            System.err.println("Some problem with query");
-            System.exit(-1);
+        } catch (Exception e) {
+            err.println("Some problem with query or internet connection");
+            throw e;
         }
         showTweets(queryResult.getTweets());
     }
 
-    public static void showTweets(List<Status> tweets) {
+    protected void showTweets(List<Status> tweets) {
         if (opt.isHidingRetweets()) {
             tweets = tweets.stream()
                     .filter(p -> !p.isRetweet()).collect(Collectors.toList());
         }
-        System.out.println("There are " + String.valueOf(tweets.size())
-                + " tweets about your query without limitation");
+        out.println("There are " + String.valueOf(tweets.size()) + " tweets about your query without limitation");
         if (opt.isSetLimit()) {
             tweets = tweets.subList(0, Math.min(tweets.size(), opt.getLimit()));
         }
@@ -114,34 +126,31 @@ public class TwitterStream {
                 showOneTweet(t, TweetFormatter.ShowTime.yes);
             }
         } else {
-            System.out.println("There are not any tweets.");
+            out.println("There are not any tweets.");
         }
     }
 
-    private static void showOneTweet(Status tweet, TweetFormatter.ShowTime showTime) {
-        System.out.println(TweetFormatter.oneTweetToStr(tweet, showTime));
+    protected void showOneTweet(Status tweet, TweetFormatter.ShowTime showTime) {
+        out.println(tweetFormatter.oneTweetToStr(tweet, showTime));
     }
 
-    public static void makeQuery() {
-        System.err.println("QueryStr is: " + opt.getQuery() + TweetFormatter.clauseStr(opt.isHidingRetweets(),
-                TweetFormatter.clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
-        System.err.println(opt.getQuery().length());
-        query = new Query(opt.getQuery() + TweetFormatter.clauseStr(opt.isHidingRetweets(),
-                TweetFormatter.clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
+    protected void makeQuery() {
+        err.println("QueryStr is: " + opt.getQuery() + tweetFormatter.clauseStr(opt.isHidingRetweets(),
+                tweetFormatter.clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
+        query = factory.newQuery();
+        query.setQuery(opt.getQuery() + tweetFormatter.clauseStr(opt.isHidingRetweets(),
+                tweetFormatter.clauseStr(opt.getQuery().length() > 0, "+") + "exclude:retweets"));
         if (opt.isSetLimit()) {
             query.setCount(opt.getLimit());
         }
         if (opt.isSetPlace()) {
             try {
-                YandexPlaces places = new YandexPlaces();
+                YandexPlaces places = factory.newYandexPlaces();
                 places.setPlaceQuery(opt.getPlace());
                 double[] coord = places.calcCoord();
-                /*System.err.println("Query geo is: lat = " + String.valueOf(coord[1])
-                        + " long = " + String.valueOf(coord[0])
-                        + " radius = " + String.valueOf(places.calcRadiusKm()));*/
-                query.setGeoCode(new GeoLocation(coord[1], coord[0]), places.calcRadiusKm(), Query.Unit.mi);
+                query.setGeoCode(new GeoLocation(coord[1], coord[0]), places.calcRadiusKm(), Query.Unit.km);
             } catch (PlaceNotFoundException e) {
-                System.err.println("Sorry but --place option is failed, and run will be continued without it");
+                err.println("Sorry but --place option is failed, and run will be continued without it");
             }
         }
     }

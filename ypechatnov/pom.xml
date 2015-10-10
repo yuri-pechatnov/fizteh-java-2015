@@ -63,9 +63,9 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
     <build>
-        <outputDirectory>target</outputDirectory>
+        <outputDirectory>twitter</outputDirectory>
         <finalName>twitter</finalName>
-        <sourceDirectory>src/</sourceDirectory>
+        <sourceDirectory>src/main/java</sourceDirectory>
         <resources>
             <resource>
                 <directory>${basedir}/src</directory>
@@ -94,8 +94,8 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.TwitterStream</mainClass>
-                            <packageName>main.java.ru.fizteh.fivt.students.ypechatnov.Twitter</packageName>
+                            <mainClass>ru.fizteh.fivt.students.ypechatnov.Twitter.TwitterStream</mainClass>
+                            <packageName>ru.fizteh.fivt.students.ypechatnov.Twitter</packageName>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>

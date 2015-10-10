@@ -1,4 +1,4 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library;
+package ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
 
 //import twitter4j.StallWarning;
@@ -16,9 +16,13 @@ import java.util.Queue;
 public class TwitterListener extends StatusAdapter {
     private Queue<String> outs;
     private static final int LIMIT = 1000000;
+    protected TweetFormatter tweetFormatter;
+    private boolean hideRetweets;
 
-    public TwitterListener init() {
+    public TwitterListener init(boolean hideRetweetsArg) {
         outs = new ConcurrentLinkedQueue<String>();
+        tweetFormatter = new TweetFormatter();
+        hideRetweets = hideRetweetsArg;
         return this;
     }
 
@@ -36,7 +40,9 @@ public class TwitterListener extends StatusAdapter {
 
     @Override
     public void onStatus(Status status) {
-        addTweetStr(TweetFormatter.oneTweetToStr(status, TweetFormatter.ShowTime.no));
+        if (!status.isRetweet() || !hideRetweets) {
+            addTweetStr(tweetFormatter.oneTweetToStr(status, TweetFormatter.ShowTime.no));
+        }
     }
     /*
     @Override

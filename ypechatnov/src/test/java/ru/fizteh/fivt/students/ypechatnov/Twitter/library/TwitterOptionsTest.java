@@ -1,38 +1,40 @@
-package test.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library;
+package ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
 import org.junit.*;
 import org.junit.rules.*;
 import junit.framework.Assert;
 import org.junit.runner.*;
 import org.mockito.*;
 import org.mockito.runners.*;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterOptions;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.TwitterOptions;
 import twitter4j.*;
 
 import java.util.Date;
 
+import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 
+
 public class TwitterOptionsTest {
     @Rule
-    private ExpectedException thrown = ExpectedException.none();
+    public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void testHelpOption1() throws TwitterParameterException {
         String[] args1 = {"-h"}, args2 = {"--help"};
         TwitterOptions opt;
         opt = new TwitterOptions().parse(args1);
-        Assert.assertEquals(opt.isNeedToShowHelp(), true);
+        assertEquals(opt.isNeedToShowHelp(), true);
         opt = new TwitterOptions().parse(args2);
-        Assert.assertEquals(opt.isNeedToShowHelp(), true);
+        assertEquals(opt.isNeedToShowHelp(), true);
     }
     @Test
     public void testHelpOption2() throws TwitterParameterException {
         String[] args = {"-s"};
         TwitterOptions opt = new TwitterOptions().parse(args);
-        Assert.assertEquals(opt.isNeedToShowHelp(), false);
+        assertEquals(opt.isNeedToShowHelp(), false);
     }
 
     @Test
@@ -40,7 +42,7 @@ public class TwitterOptionsTest {
         thrown.expect(TwitterParameterException.class);
         String[] args = {"-h", "smth"};
         TwitterOptions opt = new TwitterOptions().parse(args);
-        Assert.assertEquals(opt.isNeedToShowHelp(), false);
+        assertEquals(opt.isNeedToShowHelp(), false);
     }
 
     @Test
@@ -48,7 +50,7 @@ public class TwitterOptionsTest {
         String[] args1 = {"-q", "Muuu"}, args2 = {"--query", "Muuu"};
         TwitterOptions opt;
         opt = new TwitterOptions().parse(args1);
-        Assert.assertEquals(opt.isSetQuery(), true);
+        assertEquals(opt.isSetQuery(), true);
         Assert.assertEquals(opt.getQuery(), "Muuu");
         opt = new TwitterOptions().parse(args2);
         Assert.assertEquals(opt.isSetQuery(), true);

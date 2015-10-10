@@ -1,10 +1,10 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library;
+package ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
 /**
  * Created by ura on 27.09.15.
  */
 
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.PlaceNotFoundException;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.PlaceNotFoundException;
 import java.io.*;
 import java.net.*;
 import javax.xml.parsers.*;
@@ -12,7 +12,7 @@ import org.apache.commons.io.IOUtils;
 import org.xml.sax.InputSource;
 import org.w3c.dom.*;
 import twitter4j.JSONObject;
-import twitter4j.Place;
+
 
 
 public class YandexPlaces {

@@ -1,4 +1,4 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions;
+package ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions;
 
 /**
  * Created by ura on 04.10.15.

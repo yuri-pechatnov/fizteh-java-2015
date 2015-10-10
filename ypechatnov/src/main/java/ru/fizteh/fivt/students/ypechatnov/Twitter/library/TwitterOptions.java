@@ -1,4 +1,4 @@
-package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library;
+package ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
 /**
  * Created by ura on 27.09.15.
@@ -6,8 +6,10 @@ package main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
 
 import com.beust.jcommander.*;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
-import main.java.ru.fizteh.fivt.students.ypechatnov.Twitter.library.validators.NonNegativeInteger;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.exceptions.TwitterParameterException;
+import ru.fizteh.fivt.students.ypechatnov.Twitter.library.validators.NonNegativeInteger;
+
+import java.io.PrintStream;
 
 
 public class TwitterOptions {
@@ -75,8 +77,11 @@ public class TwitterOptions {
 
     private JCommander jc;
 
-    public void usage() {
+    public void usage(PrintStream out) {
+        PrintStream systemOut = System.out;
+        System.setOut(out);
         jc.usage();
+        System.setOut(systemOut);
     }
 
     public TwitterOptions parse(String[] args) throws TwitterParameterException {
