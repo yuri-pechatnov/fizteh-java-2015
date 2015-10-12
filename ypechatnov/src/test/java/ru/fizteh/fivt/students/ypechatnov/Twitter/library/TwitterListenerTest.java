@@ -34,7 +34,7 @@ public class TwitterListenerTest extends TwitterListener {
         onStatus(status);
         String result = pollTweetStr();
         assertEquals(result,
-                tweetFormatter.USER_HIGHLIGHT_BEGIN + "@Vasya Pupkin" + tweetFormatter.USER_HIGHLIGHT_END
+                TweetFormatter.USER_HIGHLIGHT_BEGIN + "@Vasya Pupkin" + TweetFormatter.USER_HIGHLIGHT_END
                         + ": Petya is the best friend of mine");
         assertEquals(pollTweetStr(), null);
     }

@@ -16,8 +16,12 @@ import java.util.Queue;
 public class TwitterListener extends StatusAdapter {
     private Queue<String> outs;
     private static final int LIMIT = 1000000;
-    protected TweetFormatter tweetFormatter;
+    private TweetFormatter tweetFormatter;
     private boolean hideRetweets;
+
+    protected void setTweetFormatter(TweetFormatter tweetFormatterArg) {
+        tweetFormatter = tweetFormatterArg;
+    }
 
     public TwitterListener init(boolean hideRetweetsArg) {
         outs = new ConcurrentLinkedQueue<String>();

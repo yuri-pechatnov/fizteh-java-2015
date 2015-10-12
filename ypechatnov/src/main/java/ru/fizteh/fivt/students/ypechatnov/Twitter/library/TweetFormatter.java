@@ -2,6 +2,9 @@ package ru.fizteh.fivt.students.ypechatnov.Twitter.library;
 
 import twitter4j.Status;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 /**
@@ -12,7 +15,7 @@ public class TweetFormatter {
         yes, no
     };
 
-    public final String
+    public static final String
             DATE_HIGHLIGHT_BEGIN = "\u001B[32m",
             DATE_HIGHLIGHT_END = "\u001B[0m",
             USER_HIGHLIGHT_BEGIN = "\u001B[33m",
@@ -21,41 +24,54 @@ public class TweetFormatter {
     public String oneTweetToStr(Status tweet, ShowTime showTime) {
         String retweetPart = "";
         if (tweet.isRetweet()) {
-            retweetPart = "ретвитнул " + USER_HIGHLIGHT_BEGIN
-                    + "@" + tweet.getRetweetedStatus().getUser().getScreenName()
-                    + USER_HIGHLIGHT_END + ": ";
+            retweetPart = new StringBuilder().append("ретвитнул ").append(USER_HIGHLIGHT_BEGIN)
+                    .append("@").append(tweet.getRetweetedStatus().getUser().getScreenName())
+                    .append(USER_HIGHLIGHT_END).append(": ").toString();
             if (retweetPart == null) {
                 retweetPart = "";
             }
         }
-        return clauseStr(showTime == ShowTime.yes, DATE_HIGHLIGHT_BEGIN + "["
-                    + timeInReadableFormat(tweet.getCreatedAt()) + "]" + DATE_HIGHLIGHT_END + " ")
-                + USER_HIGHLIGHT_BEGIN + "@" + tweet.getUser().getScreenName() + USER_HIGHLIGHT_END
-                + ": " + retweetPart + tweet.getText()
-                + clauseStr(tweet.isRetweeted(), " (" + tweet.getRetweetCount() + " ретвит"
-                    + calcNumEnding(new Long(tweet.getRetweetCount()), "", "а", "ов") + ")");
+        return new StringBuilder().append(
+                clauseStr(showTime == ShowTime.yes, DATE_HIGHLIGHT_BEGIN + "["
+                    + timeInReadableFormat(tweet.getCreatedAt()) + "]" + DATE_HIGHLIGHT_END + " "))
+                .append(USER_HIGHLIGHT_BEGIN).append("@").append(tweet.getUser().getScreenName())
+                .append(USER_HIGHLIGHT_END).append(": ").append(retweetPart).append(tweet.getText())
+                .append(
+                    clauseStr(tweet.isRetweeted(), " (" + tweet.getRetweetCount() + " ретвит"
+                    + calcNumEnding(new Long(tweet.getRetweetCount()), "", "а", "ов") + ")"))
+                .toString();
     }
 
     public String timeInReadableFormat(Date date) {
         final long ms2s = 1000L, s2m = 60L, m2h = 60L, h2d = 24L;
-        long delta = (System.currentTimeMillis() - date.getTime());
-        delta /= ms2s; // Now delta in seconds
-        delta /= s2m; // Now delta in minutes
-        if (delta < 2L) {
+
+        LocalDateTime tweetTime = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
+                nowTime = LocalDateTime.now();
+
+        long minuteDifference = ChronoUnit.MINUTES.between(tweetTime, nowTime);
+        long hourDifference = ChronoUnit.HOURS.between(tweetTime, nowTime);
+        long daysDifference = tweetTime.toLocalDate().until(nowTime.toLocalDate(), ChronoUnit.DAYS);
+
+        long deltaMinutes = ChronoUnit.MINUTES.between(tweetTime, nowTime);
+        if (deltaMinutes < 2L) {
             return "только что";
         }
-        if (delta < m2h) {
-            return String.valueOf(delta) + " минут" + calcNumEnding(delta, "у", "ы", "") + " назад";
+        long deltaHours = ChronoUnit.HOURS.between(tweetTime, nowTime);
+        if (deltaHours == 0L) {
+            return new StringBuilder().append(deltaMinutes).append(" минут")
+                    .append(calcNumEnding(deltaMinutes, "у", "ы", "")).append(" назад").toString();
         }
-        delta /= m2h; // Now in hours
-        if (delta < h2d) {
-            return String.valueOf(delta) + " час" + calcNumEnding(delta, "", "а", "ов") + " назад";
+        long deltaDays = tweetTime.toLocalDate().until(nowTime.toLocalDate(), ChronoUnit.DAYS);
+        if (deltaDays != 0L) {
+            if (deltaDays == 1L) {
+                return "вчера";
+            } else {
+                return new StringBuilder().append(deltaDays).append(" д")
+                        .append(calcNumEnding(deltaDays, "ень", "ня", "ней")).append(" назад").toString();
+            }
         }
-        delta /= h2d; // Now in days
-        if (delta == 1L) {
-            return "вчера";
-        }
-        return String.valueOf(delta) + " д" + calcNumEnding(delta, "ень", "ня", "ней") + " назад";
+        return new StringBuilder().append(deltaHours).append(" час").append(calcNumEnding(deltaHours, "", "а", "ов"))
+                    .append(" назад").toString();
     }
 
     public String calcNumEnding(Long number, String p1, String p24, String p50) {

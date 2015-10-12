@@ -11,12 +11,11 @@ public class NonNegativeInteger implements IParameterValidator {
         try {
             n = Integer.parseInt(value);
         } catch (Exception e) {
-            throw new ParameterException("Parameter " + name
-                    + " should be non-negative (found " + value + ")");
+            n = -1;
         }
         if (n < 0) {
-            throw new ParameterException("Parameter " + name
-                    + " should be non-negative (found " + value + ")");
+            throw new ParameterException(new StringBuilder().append("Parameter ").append(name)
+                    .append(" should be non-negative integer (found ").append(value).append(")").toString());
         }
     }
 }

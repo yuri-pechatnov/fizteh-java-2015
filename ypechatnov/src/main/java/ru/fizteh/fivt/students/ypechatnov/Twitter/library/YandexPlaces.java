@@ -17,6 +17,7 @@ import twitter4j.JSONObject;
 
 public class YandexPlaces {
     private Document doc;
+    private static final double EARTH_RADIUS = 6371;
 
     public double[] calcCoord() throws PlaceNotFoundException {
         try {
@@ -36,7 +37,6 @@ public class YandexPlaces {
             upperCorner = doc.getElementsByTagName("upperCorner").item(0).getTextContent();
 
             // https://ru.wikipedia.org/wiki/%D0%9E%D1%80%D1%82%D0%BE%D0%B4%D1%80%D0%BE%D0%BC%D0%B8%D1%8F
-            final Double r = new Double(6371);
             Double a1, a2, p1, p2, d;
             p1 = Math.toRadians(Double.parseDouble(lowerCorner.split(" ")[0]));
             a1 = Math.toRadians(Double.parseDouble(lowerCorner.split(" ")[1]));
@@ -44,7 +44,7 @@ public class YandexPlaces {
             a2 = Math.toRadians(Double.parseDouble(upperCorner.split(" ")[1]));
             d = Math.acos(Math.sin(p1) * Math.sin(p2)
                     + StrictMath.cos(p1) * Math.cos(p2) * Math.cos(a2 - a1));
-            return d * r / new Double(2.0);
+            return d * EARTH_RADIUS / 2.0;
         } catch (Exception e) {
             System.err.println(e);
             throw new PlaceNotFoundException();
@@ -90,16 +90,24 @@ public class YandexPlaces {
     public String retrieveGeoCodeXML(String place) throws PlaceNotFoundException {
         try {
             StringBuilder result = new StringBuilder();
-            URL url = new URL("https://geocode-maps.yandex.ru/1.x/?&geocode=" + place + "&results=1");
-            System.err.println("Query to YandexMaps: " + url.toString());
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String line;
-            while ((line = rd.readLine()) != null) {
-                result.append(line + "\n");
+            URL url = new URL(new StringBuilder().append("https://geocode-maps.yandex.ru/1.x/?&geocode=")
+                    .append(place).append("&results=1").toString());
+            System.err.println(new StringBuilder().append("Query to YandexMaps: ").append(url.toString()));
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String line;
+                while ((line = rd.readLine()) != null) {
+                    result.append(line + "\n");
+                }
+                rd.close();
+            } finally {
+                if (conn != null) {
+                    conn.disconnect();
+                }
             }
-            rd.close();
             return result.toString();
         } catch (Exception e) {
             throw new PlaceNotFoundException();
