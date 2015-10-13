@@ -94,18 +94,13 @@ public class YandexPlaces {
                     .append(place).append("&results=1").toString());
             System.err.println(new StringBuilder().append("Query to YandexMaps: ").append(url.toString()));
             HttpURLConnection conn = null;
-            try {
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            try (InputStream input = conn.getInputStream()) {
+                BufferedReader rd = new BufferedReader(new InputStreamReader(input));
                 String line;
                 while ((line = rd.readLine()) != null) {
                     result.append(line + "\n");
-                }
-                rd.close();
-            } finally {
-                if (conn != null) {
-                    conn.disconnect();
                 }
             }
             return result.toString();
