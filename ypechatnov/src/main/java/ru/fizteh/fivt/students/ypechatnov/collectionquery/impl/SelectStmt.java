@@ -1,10 +1,13 @@
 package ru.fizteh.fivt.students.ypechatnov.collectionquery.impl;
 
+
+import ru.fizteh.fivt.students.ypechatnov.collectionquery.Aggregates;
 import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.aggregators.AggregatoComporato;
 import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.exceptions.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -22,125 +25,140 @@ public class SelectStmt<T, R> {
     Stream <R> result = null;
     Class<R> resultClass;
     List<Function<T, ?>> aggregates, groupByExpressions = null;
-    List<Comparator<R>> groupComparators = null;
+    List<AggregatoComporato<R, ?>> groupComparators = null;
+    Set<Function<T, ?>> groupByExpressionsSet;
 
-    class SourceItemToResultMapper implements Function<T, R> {
-        Constructor<R> constructor = null;
-        @Override
-        public R apply(T sourceItem) {
-            try {
-                Object[] argumentsValue = aggregates.stream().map(
-                        function -> function.apply(sourceItem)).toArray();
-                if (constructor == null) {
-                    Class<?>[] argumentsType = new Class<?>[argumentsValue.length];
-                    for (int i = 0; i < argumentsValue.length; i++) {
-                        argumentsType[i] = argumentsValue[i].getClass();
-                    }
-                    constructor = resultClass.getConstructor(argumentsType);
+    class Group extends ArrayList<T> implements Comparable<Group> {
+        R result = null;
+        List<Object> argumentsValue, sortParameters;
+
+        public int compareTo(Group g) {
+            for (int i = 0; i < groupComparators.size(); i++) {
+                if (sortParameters.get(i) == null) {
+                    return -1;
                 }
-                return constructor.newInstance(argumentsValue);
-            } catch (Throwable e) {
-                return null;
-                // throw new CollectionConstructingException();
+                if (g.sortParameters.get(i) == null) {
+                    return 1;
+                }
+                int compareResult = groupComparators.get(i).compareObjects(
+                        sortParameters.get(i), g.sortParameters.get(i));
+                if (compareResult != 0) {
+                    return compareResult;
+                }
             }
+            return 0;
         }
-    };
-
-    class SourceListToResultMapper implements Function<List<T>, R> {
-        Constructor<R> constructor = null;
-        @Override
-        @SuppressWarnings("unchecked")
-        public R apply(List<T> list) {
-            if (list.isEmpty()) {
-                return null;
-            }
-            try {
-                Object[] argumentsValue = new Object[aggregates.size()];
-                for (int i = 0; i < aggregates.size(); i++) {
-                    if (aggregates.get(i) instanceof Aggregator) {
-                        Aggregator<T, R> listFunction = (Aggregator<T, R>)aggregates.get(i);
-                        argumentsValue[i] = listFunction.applyList(list);
-                        System.out.println(argumentsValue[i]);
-                    } else {
-                        argumentsValue[i] = aggregates.get(i).apply(list.get(0));
-                    }
-                }
-                if (constructor == null) {
-                    Class<?>[] argumentsType = new Class<?>[argumentsValue.length];
-                    for (int i = 0; i < argumentsValue.length; i++) {
-                        argumentsType[i] = argumentsValue[i].getClass();
-                    }
-                    constructor = resultClass.getConstructor(argumentsType);
-                }
-                return constructor.newInstance(argumentsValue);
-            } catch (Throwable e) {
-                return null;
-                // throw new CollectionConstructingException();
-            }
+        Group(T item) {
+            add(item);
         }
-    };
-
-    class Group extends ArrayList<T> {
-        R result;
+        Group() {
+        }
     }
 
     class ComputingResultIterator implements Iterator<R> {
-        SourceItemToResultMapper itemMapper;
         Iterator <T> sourceIterator = null;
         List<Group> groups;
         List<R> result;
-        Iterator<R> resultIterator;
+        Iterator<R> resultIterator = null;
+        List<Constructor<R>> constructors;
         @SuppressWarnings("unchecked")
         private void precalculateLists() {
-            Map<List<Object>, Group> groupsMap = new HashMap<List<Object>, Group>();
-            sourceIterator = source.iterator();
-            while (sourceIterator.hasNext()) {
-                T sourceItem = sourceIterator.next();
-                List<Object> key = Arrays.asList(
-                        groupByExpressions.stream().map(func -> func.apply(sourceItem)).toArray());
-                if (groupsMap.get(key) == null) {
-                    groupsMap.put(key, new Group());
-                }
-                groupsMap.get(key).add(sourceItem);
-            }
-            groups = new ArrayList<Group>(groupsMap.values());
-            SourceListToResultMapper listMapper = new SourceListToResultMapper();
-            groups.stream().forEach(item -> { item.result = listMapper.apply(item); });
 
-            System.out.println(groups);
+            System.out.println("Start");
+            if (groupByExpressions != null) {
+                Map<List<Object>, Group> groupsMap = new HashMap<List<Object>, Group>();
+                sourceIterator = source.iterator();
+                while (sourceIterator.hasNext()) {
+                    T sourceItem = sourceIterator.next();
+                    List<Object> key = Arrays.asList(
+                            groupByExpressions.stream().map(func -> func.apply(sourceItem)).toArray());
+                    if (groupsMap.get(key) == null) {
+                        groupsMap.put(key, new Group());
+                    }
+                    groupsMap.get(key).add(sourceItem);
+                }
+                groups = new ArrayList<Group>(groupsMap.values());
+            } else {
+                groups = new ArrayList<Group>();
+                source.forEach(item -> groups.add(new Group(item)));
+            }
+            constructors = Arrays.asList((Constructor<R>[])resultClass.getConstructors());
+            System.out.println(constructors);
+            groups.stream().forEach(item -> {
+                item.argumentsValue = new ArrayList<Object>();
+                for (Function<T, ?> function : aggregates) {
+                    if (function instanceof Aggregator) {
+                        Aggregator<T, R> listFunction = (Aggregator<T, R>)function;
+                        item.argumentsValue.add(listFunction.applyList(item));
+                    } else {
+                        item.argumentsValue.add(function.apply(item.get(0)));
+                    }
+                }
+                System.out.println(constructors);
+                List<Constructor<R>> oldConstructors = constructors;
+                constructors = new ArrayList<Constructor<R>>();
+                oldConstructors.stream().forEach(constructor -> {
+                    Class<?>[] parameters = constructor.getParameterTypes();
+                    if (parameters.length != aggregates.size()) {
+                        return;
+                    }
+                    for (int i = 0; i < parameters.length; i++) {
+                        if (!(item.argumentsValue.get(i) == null ||
+                                parameters[i].isInstance(item.argumentsValue.get(i)))) {
+                            return;
+                        }
+                    }
+                    System.out.println("yep");
+                    constructors.add(constructor);
+                });
+            });
+            if (constructors.size() == 0) {
+                resultIterator = null;
+                return;
+            }
+            Constructor<R> constructor = constructors.get(0);
+            groups.stream().forEach(item -> {
+                try {
+                    item.result = constructor.newInstance(item.argumentsValue.toArray());
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    item.result = null;
+                }
+            });
+            if (groupComparators != null) {
+                groups.stream().forEach(item -> {
+                    item.sortParameters = new ArrayList<Object>();
+                    for (AggregatoComporato<R, ?> comparator : groupComparators) {
+                        Function<R, ?> function = comparator.getExpression();
+                        if (function instanceof Aggregator) {
+                            throw new Error();
+                        } else {
+                            item.sortParameters.add(function.apply(item.result));
+                        }
+                    }
+                });
+                groups.sort(Group::compareTo);
+            }
             result = new ArrayList<R>(Arrays.asList((R[])groups.stream().map(group -> group.result).toArray()));
             System.out.println(result);
             resultIterator = result.iterator();
         }
         private void checkAndPrecalculate() {
-            if (groupByExpressions == null) {
-                if (sourceIterator == null) {
-                    sourceIterator = source.iterator();
-                    itemMapper = new SourceItemToResultMapper();
-                }
-            } else {
-                if (groups == null) {
-                    precalculateLists();
-                }
+            if (resultIterator == null) {
+                precalculateLists();
             }
         }
         @Override
         public boolean hasNext() {
             checkAndPrecalculate();
-            if (groupByExpressions == null) {
-                return sourceIterator.hasNext();
-            } else {
-                return resultIterator.hasNext();
+            if (resultIterator == null) {
+                return false;
             }
+            return resultIterator.hasNext();
         }
         @Override
         public R next() {
             checkAndPrecalculate();
-            if (groupByExpressions == null) {
-                return itemMapper.apply(sourceIterator.next());
-            } else {
-                return resultIterator.next();
-            }
+            return resultIterator.next();
         }
     };
 
@@ -171,7 +189,8 @@ public class SelectStmt<T, R> {
     public Stream<R> stream() throws CollectionException {
         return new WhereStmt().stream();
     }
-    public final WhereStmt orderBy(Comparator<R>... comparators) {
+    @SafeVarargs
+    public final WhereStmt orderBy(Comparator<R>... comparators) throws CollectionException {
         return new WhereStmt().orderBy(comparators);
     }
     public final UnionStmt<R> union() throws CollectionException {
@@ -181,9 +200,9 @@ public class SelectStmt<T, R> {
     public class WhereStmt {
         @SafeVarargs
         public final WhereStmt groupBy(Function<T, ?>... expressions) throws CollectionBadAggregatesException {
-            Set<Function<T, ?>> set = new HashSet<Function<T, ?>>(Arrays.asList(expressions));
+            groupByExpressionsSet = new HashSet<Function<T, ?>>(Arrays.asList(expressions));
             for (Function<T, ?> function: aggregates) {
-                if (!(function instanceof Aggregator || set.contains(function))) {
+                if (!(function instanceof Aggregator || groupByExpressionsSet.contains(function))) {
                     throw new CollectionBadAggregatesException();
                 }
             }
@@ -192,22 +211,15 @@ public class SelectStmt<T, R> {
         }
 
         @SafeVarargs
-        public final WhereStmt orderBy(Comparator<R>... comparators) {
-            if (groupByExpressions == null) {
-                result = result.sorted(new Comparator<R>() {
-                    @Override
-                    public int compare(R o1, R o2) {
-                        for (Comparator<R> comparator : comparators) {
-                            int result = comparator.compare(o1, o2);
-                            if (result != 0) {
-                                return result;
-                            }
-                        }
-                        return 0;
-                    }
-                });
-            } else {
-                groupComparators = Arrays.asList(comparators);
+        @SuppressWarnings("unchecked")
+        public final WhereStmt orderBy(Comparator<R>... comparators) throws CollectionException {
+            groupComparators = new ArrayList<AggregatoComporato<R, ?>>();
+            for (Comparator<R> comparator : comparators) {
+                if (comparator instanceof AggregatoComporato) {
+                    groupComparators.add((AggregatoComporato<R, ?>)comparator);
+                } else {
+                    throw new CollectionBadAggregatesException();
+                }
             }
             return this;
         }

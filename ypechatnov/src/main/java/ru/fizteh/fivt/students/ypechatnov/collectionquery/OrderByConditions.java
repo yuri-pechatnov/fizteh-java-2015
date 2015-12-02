@@ -22,11 +22,7 @@ public class OrderByConditions {
      * @return
      */
     public static <T, R extends Comparable<R>> Comparator<T> asc(Function<T, R> expression) {
-        if (expression instanceof Aggregator) {
-            return (o1, o2) -> 0;
-        } else {
-            return (o1, o2) -> expression.apply(o1).compareTo(expression.apply(o2));
-        }
+        return new AggregatoComporato<T, R>(expression, Comparable::compareTo, !(expression instanceof Aggregator));
     }
 
     /**
@@ -38,11 +34,8 @@ public class OrderByConditions {
      * @return
      */
     public static <T, R extends Comparable<R>> Comparator<T> desc(Function<T, R> expression) {
-        if (expression instanceof Aggregator) {
-            return (o1, o2) -> 0;
-        } else {
-            return (o1, o2) -> -expression.apply(o1).compareTo(expression.apply(o2));
-        }
+        return new AggregatoComporato<T, R>(expression,
+                (o1, o2) -> -o1.compareTo(o2), !(expression instanceof Aggregator));
     }
 
 }

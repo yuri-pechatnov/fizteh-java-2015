@@ -55,17 +55,19 @@ public class CollectionQuery {
             Iterable<Statistics> statistics =
                     from(list(
                             student("ivanov", LocalDate.parse("1986-08-06"), "494"),
-                            student("ivanov", LocalDate.parse("1986-08-06"), "494")))
+                            student("sidorov", LocalDate.parse("1986-08-06"), "495"),
+                            student("smith", LocalDate.parse("1986-08-06"), "495"),
+                            student("petrov", LocalDate.parse("2006-08-06"), "494")))
                             .select(Statistics.class, group, countGroup, avgGroup)
                             .where(rlike(Student::getName, ".*ov").and(s -> s.age() > 20))
                             .groupBy(group)
                             .having(s -> s.getCount() > 0)
-                            /*.orderBy(asc(Statistics::getGroup), desc(Statistics::getAge))
+                            .orderBy(asc(Statistics::getGroup), desc(Statistics::getCount))
                             .limit(100)
                             .union()
                             .from(list(student("ivanov", LocalDate.parse("1985-08-06"), "494")))
                             .selectDistinct(Statistics.class, s -> "all", count(s -> 1), avg(Student::age))
-                            */.execute();
+                            .execute();
             System.out.println(statistics);
         } catch (Throwable e) {
             System.err.println(e);
@@ -136,7 +138,7 @@ public class CollectionQuery {
 
         private final String group;
         private final Long count;
-        private final Long age;
+        private final Double age;
 
         public String getGroup() {
             return group;
@@ -146,14 +148,14 @@ public class CollectionQuery {
             return count;
         }
 
-        public Long getAge() {
+        public Double getAge() {
             return age;
         }
 
         public Statistics(String group, Long count, Double age) {
             this.group = group;
             this.count = count;
-            this.age = age.longValue();
+            this.age = age;
         }
 
         @Override

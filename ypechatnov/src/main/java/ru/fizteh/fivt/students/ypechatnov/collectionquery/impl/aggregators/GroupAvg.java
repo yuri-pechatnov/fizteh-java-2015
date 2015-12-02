@@ -15,7 +15,7 @@ public class GroupAvg<T, R extends Number> extends Aggregator<T, R> {
     public Double applyList(List<T> list) {
         sum = 0.0;
         list.stream().map(expression).forEach(value -> {
-            sum = sum + (Double)value;
+            sum = sum + value.doubleValue();
         });
         return sum / list.size();
     }
