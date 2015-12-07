@@ -9,8 +9,8 @@ import java.util.function.Function;
  * Created by ura on 01.12.15.
  */
 public class GroupCount<T, R> extends Aggregator<T, R> {
-    Function<T, R> expression;
-    R result;
+    private Function<T, R> expression;
+    private R result;
     public Long applyList(List<T> list) {
         return list.stream().map(expression).count();
     }

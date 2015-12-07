@@ -4,7 +4,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -35,7 +34,7 @@ public class Sources {
      */
     @SafeVarargs
     public static <T> Set<T> set(T... items) {
-        return new HashSet<T>(Arrays.asList(items));
+        return new HashSet<T>(list(items));
     }
 
     /**
@@ -46,7 +45,7 @@ public class Sources {
     public static <T> Stream<T> lines(InputStream inputStream) throws NoSuchMethodException {
         // I can't get instances without Class<?>
         // wrong template
-        throw new NoSuchMethodError();
+        throw new NoSuchMethodException();
     }
 
     /**
@@ -56,7 +55,7 @@ public class Sources {
      */
     public static <T> Stream<T> lines(Path file) throws IOException, NoSuchMethodException {
         try (FileInputStream input = new FileInputStream(file.toFile())) {
-            return lines(input);
+            return lines((InputStream) input);
         }
     }
 

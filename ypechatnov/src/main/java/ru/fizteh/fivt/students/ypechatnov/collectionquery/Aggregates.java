@@ -23,7 +23,7 @@ public class Aggregates {
     }
 
     /**
-     * Minimum value for expression for elements of given collecdtion.
+     * Minimum value for expression for elements of given collection.
      *
      * @param expression
      * @param <C>

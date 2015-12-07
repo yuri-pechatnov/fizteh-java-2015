@@ -1,20 +1,16 @@
 package ru.fizteh.fivt.students.ypechatnov.collectionquery.impl;
 
 
-import ru.fizteh.fivt.students.ypechatnov.collectionquery.Aggregates;
-import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.aggregators.AggregatoComporato;
+import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.aggregators.AggregatoComparato;
 import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.exceptions.*;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import java.util.zip.DataFormatException;
 
 /**
  * Created by kormushin on 06.10.15.
@@ -25,7 +21,7 @@ public class SelectStmt<T, R> {
     Stream <R> result = null;
     Class<R> resultClass;
     List<Function<T, ?>> aggregates, groupByExpressions = null;
-    List<AggregatoComporato<R, ?>> groupComparators = null;
+    List<AggregatoComparato<R, ?>> groupComparators = null;
     Set<Function<T, ?>> groupByExpressionsSet;
 
     class Group extends ArrayList<T> implements Comparable<Group> {
@@ -63,8 +59,6 @@ public class SelectStmt<T, R> {
         List<Constructor<R>> constructors;
         @SuppressWarnings("unchecked")
         private void precalculateLists() {
-
-            System.out.println("Start");
             if (groupByExpressions != null) {
                 Map<List<Object>, Group> groupsMap = new HashMap<List<Object>, Group>();
                 sourceIterator = source.iterator();
@@ -83,7 +77,6 @@ public class SelectStmt<T, R> {
                 source.forEach(item -> groups.add(new Group(item)));
             }
             constructors = Arrays.asList((Constructor<R>[])resultClass.getConstructors());
-            System.out.println(constructors);
             groups.stream().forEach(item -> {
                 item.argumentsValue = new ArrayList<Object>();
                 for (Function<T, ?> function : aggregates) {
@@ -94,7 +87,6 @@ public class SelectStmt<T, R> {
                         item.argumentsValue.add(function.apply(item.get(0)));
                     }
                 }
-                System.out.println(constructors);
                 List<Constructor<R>> oldConstructors = constructors;
                 constructors = new ArrayList<Constructor<R>>();
                 oldConstructors.stream().forEach(constructor -> {
@@ -108,29 +100,27 @@ public class SelectStmt<T, R> {
                             return;
                         }
                     }
-                    System.out.println("yep");
                     constructors.add(constructor);
                 });
             });
             if (constructors.size() == 0) {
-                resultIterator = null;
-                return;
+                throw new CollectionNoSuitableConstructorException();
             }
             Constructor<R> constructor = constructors.get(0);
             groups.stream().forEach(item -> {
                 try {
                     item.result = constructor.newInstance(item.argumentsValue.toArray());
                 } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-                    item.result = null;
+                    throw new CollectionConstructorException();
                 }
             });
             if (groupComparators != null) {
                 groups.stream().forEach(item -> {
                     item.sortParameters = new ArrayList<Object>();
-                    for (AggregatoComporato<R, ?> comparator : groupComparators) {
+                    for (AggregatoComparato<R, ?> comparator : groupComparators) {
                         Function<R, ?> function = comparator.getExpression();
                         if (function instanceof Aggregator) {
-                            throw new Error();
+                            throw new CollectionForbiddenAggregatorException();
                         } else {
                             item.sortParameters.add(function.apply(item.result));
                         }
@@ -139,7 +129,6 @@ public class SelectStmt<T, R> {
                 groups.sort(Group::compareTo);
             }
             result = new ArrayList<R>(Arrays.asList((R[])groups.stream().map(group -> group.result).toArray()));
-            System.out.println(result);
             resultIterator = result.iterator();
         }
         private void checkAndPrecalculate() {
@@ -167,7 +156,6 @@ public class SelectStmt<T, R> {
         fromStmt = fromStmtArg;
         resultClass = clazzArg;
         aggregates = Arrays.asList(s);
-        aggregates.stream().forEach(x -> {System.out.println(x.getClass());});
         source = fromStmtArg.getSource();
         result = StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(new ComputingResultIterator(),
@@ -193,17 +181,26 @@ public class SelectStmt<T, R> {
     public final WhereStmt orderBy(Comparator<R>... comparators) throws CollectionException {
         return new WhereStmt().orderBy(comparators);
     }
+
+    @SafeVarargs
+    public final WhereStmt groupBy(Function<T, ?>... expressions) throws CollectionException {
+        return new WhereStmt().groupBy(expressions);
+    }
+
     public final UnionStmt<R> union() throws CollectionException {
         return new WhereStmt().union();
+    }
+    public WhereStmt limit(int count) {
+        return new WhereStmt().limit(count);
     }
 
     public class WhereStmt {
         @SafeVarargs
-        public final WhereStmt groupBy(Function<T, ?>... expressions) throws CollectionBadAggregatesException {
+        public final WhereStmt groupBy(Function<T, ?>... expressions) throws CollectionBadSelectExpressionsException {
             groupByExpressionsSet = new HashSet<Function<T, ?>>(Arrays.asList(expressions));
             for (Function<T, ?> function: aggregates) {
                 if (!(function instanceof Aggregator || groupByExpressionsSet.contains(function))) {
-                    throw new CollectionBadAggregatesException();
+                    throw new CollectionBadSelectExpressionsException();
                 }
             }
             groupByExpressions = Arrays.asList(expressions);
@@ -213,12 +210,15 @@ public class SelectStmt<T, R> {
         @SafeVarargs
         @SuppressWarnings("unchecked")
         public final WhereStmt orderBy(Comparator<R>... comparators) throws CollectionException {
-            groupComparators = new ArrayList<AggregatoComporato<R, ?>>();
+            groupComparators = new ArrayList<AggregatoComparato<R, ?>>();
             for (Comparator<R> comparator : comparators) {
-                if (comparator instanceof AggregatoComporato) {
-                    groupComparators.add((AggregatoComporato<R, ?>)comparator);
+                if (comparator instanceof AggregatoComparato) {
+                    if (((AggregatoComparato) comparator).getExpression() instanceof Aggregator) {
+                        throw new CollectionBadAggregatesException();
+                    }
+                    groupComparators.add((AggregatoComparato<R, ?>)comparator);
                 } else {
-                    throw new CollectionBadAggregatesException();
+                    result = result.sorted(comparator::compare);
                 }
             }
             return this;

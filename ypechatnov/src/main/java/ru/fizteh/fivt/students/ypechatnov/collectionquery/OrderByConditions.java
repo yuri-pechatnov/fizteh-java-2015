@@ -1,7 +1,7 @@
 package ru.fizteh.fivt.students.ypechatnov.collectionquery;
 
 import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.Aggregator;
-import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.aggregators.AggregatoComporato;
+import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.aggregators.AggregatoComparato;
 
 import java.util.Comparator;
 import java.util.function.Function;
@@ -22,7 +22,8 @@ public class OrderByConditions {
      * @return
      */
     public static <T, R extends Comparable<R>> Comparator<T> asc(Function<T, R> expression) {
-        return new AggregatoComporato<T, R>(expression, Comparable::compareTo, !(expression instanceof Aggregator));
+        return new AggregatoComparato<T, R>(expression,
+                Comparable::compareTo, !(expression instanceof Aggregator));
     }
 
     /**
@@ -34,7 +35,7 @@ public class OrderByConditions {
      * @return
      */
     public static <T, R extends Comparable<R>> Comparator<T> desc(Function<T, R> expression) {
-        return new AggregatoComporato<T, R>(expression,
+        return new AggregatoComparato<T, R>(expression,
                 (o1, o2) -> -o1.compareTo(o2), !(expression instanceof Aggregator));
     }
 

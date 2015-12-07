@@ -2,6 +2,7 @@ package ru.fizteh.fivt.students.ypechatnov.collectionquery;
 
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -24,6 +25,7 @@ public class Conditions<T> {
             return item -> false;
         }
         Pattern pattern = Pattern.compile(regexp);
+        System.out.println();
         return item -> pattern.matcher(expression.apply(item)).matches();
     }
 

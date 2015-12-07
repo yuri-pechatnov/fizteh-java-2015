@@ -29,28 +29,9 @@ public class CollectionQuery {
      * @param args
      */
     public static void main(String[] args) {
-
         Function<Student, ?> name = Student::getName, date = Student::getDateOfBith,
                 group = Student::getGroup, maxGroup = max(Student::getGroup),
                 countGroup = count(Student::getGroup), avgGroup = avg(Student::age);
-        try {
-            Iterable<Student> stat =
-                from(list(
-                                student("ivanov", LocalDate.parse("1986-08-06"), "491"),
-                                student("A", LocalDate.parse("1986-08-06"), "491"),
-                                student("A", LocalDate.parse("1986-08-06"), "491"),
-                                student("A", LocalDate.parse("1986-08-06"), "492"),
-                                student("d", LocalDate.parse("1986-08-06"), "491"),
-                                student("babushkin", LocalDate.parse("1986-08-06"), "494"))
-                ).selectDistinct(
-                        Student.class, name, date, maxGroup
-                        //).where(
-                        //       student -> true || ("A".equals(student.name))
-                ).where(x -> true).groupBy(name, date).execute();
-            System.out.println(stat);
-        } catch (CollectionException e) {
-            System.out.println(e);
-        }
         try {
             Iterable<Statistics> statistics =
                     from(list(
@@ -69,7 +50,7 @@ public class CollectionQuery {
                             .selectDistinct(Statistics.class, s -> "all", count(s -> 1), avg(Student::age))
                             .execute();
             System.out.println(statistics);
-        } catch (Throwable e) {
+        } catch (Exception e) {
             System.err.println(e);
         }
     }

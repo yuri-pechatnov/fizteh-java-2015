@@ -7,8 +7,15 @@ import java.util.stream.StreamSupport;
  * Created by kormushin on 09.10.15.
  */
 public class UnionStmt<R> {
-    Stream<R> previousSource;
-    Class<?> previousClass;
+    private Stream<R> previousSource;
+    private Class<?> previousClass;
+
+    public Stream<R> getPreviousSource() {
+        return previousSource;
+    }
+    public Class<?> getPreviousClass() {
+        return previousClass;
+    }
 
     public <T> FromStmt<T> from(Iterable<T> list) {
         return new FromStmt<T>(previousClass, previousSource,
