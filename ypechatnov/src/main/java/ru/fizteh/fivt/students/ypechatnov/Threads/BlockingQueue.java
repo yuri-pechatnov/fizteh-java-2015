@@ -1,6 +1,7 @@
 package ru.fizteh.fivt.students.ypechatnov.Threads;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -10,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class BlockingQueue<T> {
 
-    public static class Query {
+    public static class Query implements Comparable<Query> {
         public ReentrantLock lock = new ReentrantLock();
         public Condition cond = lock.newCondition();
         public Integer count;
@@ -24,6 +25,13 @@ public class BlockingQueue<T> {
         public Query(int n) {
             count = n;
         }
+
+        @Override
+        public int compareTo(Query o) {
+            if (!count.equals(o.count))
+                return count.compareTo(o.count);
+            return ((Integer) cond.hashCode()).compareTo(o.cond.hashCode());
+        }
     }
 
 
@@ -35,6 +43,7 @@ public class BlockingQueue<T> {
         offer(list, -1L);
     }
     public void offer(List<T> list, long timeout) {
+        long startTime = System.currentTimeMillis();
         Query query = new Query(list.size());
         while (true) {
             synchronized (this) {
@@ -56,7 +65,16 @@ public class BlockingQueue<T> {
             query.lock.lock();
             try {
                 while (!query.ready) {
-                    query.cond.await();
+                    if (timeout == -1L) {
+                        query.cond.await();
+                    } else {
+                        long deltaTime = System.currentTimeMillis() - startTime;
+                        if (timeout > deltaTime) {
+                            query.cond.await(timeout - deltaTime, TimeUnit.MILLISECONDS);
+                        } else {
+                            return;
+                        }
+                    }
                 }
                 query.ready = false;
             } catch (InterruptedException e) {
@@ -71,6 +89,7 @@ public class BlockingQueue<T> {
         return take(n, -1L);
     }
     public List<T> take(int n, long timeout) {
+        long startTime = System.currentTimeMillis();
         Query query = new Query(n);
         while (true) {
             synchronized (this) {
@@ -93,7 +112,16 @@ public class BlockingQueue<T> {
             query.lock.lock();
             try {
                 while (!query.ready) {
-                    query.cond.await();
+                    if (timeout == -1L) {
+                        query.cond.await();
+                    } else {
+                        long deltaTime = System.currentTimeMillis() - startTime;
+                        if (timeout > deltaTime) {
+                            query.cond.await(timeout - deltaTime, TimeUnit.MILLISECONDS);
+                        } else {
+                            return new ArrayList<T>();
+                        }
+                    }
                 }
                 query.ready = false;
             } catch (InterruptedException e) {

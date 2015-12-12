@@ -70,11 +70,14 @@ public class Caller {
                 System.out.println("Are you ready?");
             }
             lock.lock();
-            countDownLatch = new CountDownLatch(amount);
-            currentAnswer = true;
-            currentIteration++;
-            needWrite.signalAll();
-            lock.unlock();
+            try {
+                countDownLatch = new CountDownLatch(amount);
+                currentAnswer = true;
+                currentIteration++;
+                needWrite.signalAll();
+            } finally {
+                lock.unlock();
+            }
             countDownLatch.await();
             synchronized (System.out) {
                 System.out.println("");
