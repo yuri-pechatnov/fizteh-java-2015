@@ -1,12 +1,15 @@
 package ru.fizteh.fivt.students.ypechatnov.collectionquery;
 
 import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.exceptions.*;
+import ru.fizteh.fivt.students.ypechatnov.collectionquery.impl.Tuple;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.StreamSupport;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -253,6 +256,50 @@ public class CommonTest {
                         .selectDistinct(Statistics.class, s -> "all", count(s -> 1), avg(Student::age))
                         .execute();
 
+    }
+
+    @Test
+    public void joinTest() throws Exception {
+        Tuple<String, String> tup = new Tuple<String, String>("", "");
+        Iterable<Tuple> names =
+                from(list(
+                        student("ivanova", LocalDate.parse("1985-08-06"), "494"),
+                        student("ivanov", LocalDate.parse("1985-08-06"), "495")
+                ))
+                        .join(list(
+                                student("katya", LocalDate.parse("1985-08-06"), "494"),
+                                student("ivashka", LocalDate.parse("1985-08-06"), "495")))
+                        .on((s, g) -> Objects.equals(s.getGroup(), g.getGroup()))
+                        .select(Tuple.class, sg -> sg.getFirst().getName(), sg -> sg.getSecond().getName())
+                        .execute();
+        int katya = 0, ivashka = 0;
+        for (Tuple item : names) {
+            katya += (item.toString().equals("(ivanova, katya)") ? 1 : 0);
+            ivashka += (item.toString().equals("(ivanov, ivashka)") ? 1 : 0);
+        }
+        assertTrue(katya == 1 && ivashka == 1);
+    }
+
+    @Test
+    public void joinTest2() throws Exception {
+        Tuple<String, String> tup = new Tuple<String, String>("", "");
+        Iterable<Tuple> names =
+                from(list(
+                        student("ivanova", LocalDate.parse("1985-08-06"), "494"),
+                        student("ivanov", LocalDate.parse("1985-08-06"), "495")
+                ))
+                        .join(list(
+                                student("katya", LocalDate.parse("1985-08-06"), "494"),
+                                student("ivashka", LocalDate.parse("1985-08-06"), "495")))
+                        .on(Student::getGroup, Student::getGroup)
+                        .select(Tuple.class, sg -> sg.getFirst().getName(), sg -> sg.getSecond().getName())
+                        .execute();
+        int katya = 0, ivashka = 0;
+        for (Tuple item : names) {
+            katya += (item.toString().equals("(ivanova, katya)") ? 1 : 0);
+            ivashka += (item.toString().equals("(ivanov, ivashka)") ? 1 : 0);
+        }
+        assertTrue(katya == 1 && ivashka == 1);
     }
 
 

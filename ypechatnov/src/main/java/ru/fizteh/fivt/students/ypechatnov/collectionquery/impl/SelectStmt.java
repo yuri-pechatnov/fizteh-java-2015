@@ -16,9 +16,9 @@ import java.util.stream.StreamSupport;
  * Created by kormushin on 06.10.15.
  */
 public class SelectStmt<T, R> {
-    FromStmt<T> fromStmt;
-    Stream <T> source;
-    Stream <R> result = null;
+    Stream<T> source;
+    Stream<?> previousSource;
+    Stream<R> result = null;
     Class<R> resultClass;
     List<Function<T, ?>> aggregates, groupByExpressions = null;
     List<AggregatoComparato<R, ?>> groupComparators = null;
@@ -152,16 +152,17 @@ public class SelectStmt<T, R> {
     };
 
     @SafeVarargs
-    public SelectStmt(FromStmt<T> fromStmtArg, Class<R> clazzArg, Function<T, ?>... s) {
-        fromStmt = fromStmtArg;
+    public SelectStmt(Stream<T> sourceArg, Stream<?> previousSourceArg,
+                      boolean needDistinctArg, Class<R> clazzArg, Function<T, ?>... s) {
         resultClass = clazzArg;
         aggregates = Arrays.asList(s);
-        source = fromStmtArg.getSource();
+        source = sourceArg;
+        previousSource = previousSourceArg;
         result = StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(new ComputingResultIterator(),
                         Spliterator.ORDERED), false
         );
-        if (fromStmt.needDistinct()) {
+        if (needDistinctArg) {
             result = result.distinct();
         }
     }
@@ -253,7 +254,7 @@ public class SelectStmt<T, R> {
         @SuppressWarnings("unchecked")
         public Stream<R> stream() throws CollectionException {
             try {
-                result = Stream.concat((Stream<R>)fromStmt.getPreviousSource(), result);
+                result = Stream.concat((Stream<R>)previousSource, result);
             } catch (ClassCastException e) {
                 throw new CollectionUnionTypeException();
             }

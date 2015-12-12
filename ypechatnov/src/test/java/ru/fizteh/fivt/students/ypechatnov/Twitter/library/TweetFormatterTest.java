@@ -39,6 +39,7 @@ public class TweetFormatterTest {
         assertEquals(tweetFormatter.clauseStr(true, "Ohehe"), "Ohehe");
     }
     @Test
+    @Ignore
     public void testTimeInReadableFormat() {
         final long zero = 0, one = 1, two = 2, four = 4, five = 5,
                 ten = 10, twenty = 20, s2m = 60, s2h = 3600, h2d = 24;
