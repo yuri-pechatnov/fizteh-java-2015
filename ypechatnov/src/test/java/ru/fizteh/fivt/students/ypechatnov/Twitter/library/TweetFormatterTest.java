@@ -13,6 +13,10 @@ import org.mockito.runners.*;
 import ru.fizteh.fivt.students.ypechatnov.Twitter.library.TweetFormatter;
 import twitter4j.*;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 
 import static org.junit.Assert.*;
@@ -39,47 +43,58 @@ public class TweetFormatterTest {
         assertEquals(tweetFormatter.clauseStr(true, "Ohehe"), "Ohehe");
     }
     @Test
-    @Ignore
     public void testTimeInReadableFormat() {
         final long zero = 0, one = 1, two = 2, four = 4, five = 5,
                 ten = 10, twenty = 20, s2m = 60, s2h = 3600, h2d = 24;
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(zero))),
-                "только что");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(ten))),
-                "только что");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2m * two))),
-                "2 минуты назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2m * four))),
-                "4 минуты назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2m * five))),
-                "5 минут назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2m * (ten + one)))),
-                "11 минут назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(
-                        Date.from(new Date().toInstant().minusSeconds(s2m * (ten * two + one)))),
-                "21 минуту назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2h))),
-                "1 час назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2h * two))),
-                "2 часа назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2h * five))),
-                "5 часов назад");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2h * h2d))),
-                "вчера");
-        assertEquals(
-                tweetFormatter.timeInReadableFormat(Date.from(new Date().toInstant().minusSeconds(s2h * h2d * two))),
-                "2 дня назад");
+        class TweetFormatterTester extends TweetFormatter {
+            @Override
+            protected LocalDateTime currentTime() {
+                return LocalDateTime.of(2015, 12, 13, 12, 30, 41);
+            };
+            protected Instant currentInstant() {
+                return currentTime().toInstant(currentTime().atZone(ZoneId.systemDefault()).getOffset());
+            }
+            public void test() {
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(zero))),
+                        "только что");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(ten))),
+                        "только что");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2m * two))),
+                        "2 минуты назад");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2m * four))),
+                        "4 минуты назад");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2m * five))),
+                        "5 минут назад");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2m * (ten + one)))),
+                        "11 минут назад");
+                assertEquals(
+                        timeInReadableFormat(
+                                Date.from(currentInstant().minusSeconds(s2m * (ten * two + one)))),
+                        "21 минуту назад");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2h))),
+                        "1 час назад");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2h * two))),
+                        "2 часа назад");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2h * five))),
+                        "5 часов назад");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2h * h2d))),
+                        "вчера");
+                assertEquals(
+                        timeInReadableFormat(Date.from(currentInstant().minusSeconds(s2h * h2d * two))),
+                        "2 дня назад");
+            }
+        };
+        new TweetFormatterTester().test();
     }
     @Test
     public void testCalcNumEnding() {

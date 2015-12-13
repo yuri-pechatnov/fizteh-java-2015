@@ -15,6 +15,10 @@ public class TweetFormatter {
         yes, no
     };
 
+    protected LocalDateTime currentTime() {
+        return LocalDateTime.now();
+    }
+
     public static final String
             DATE_HIGHLIGHT_BEGIN = "\u001B[32m",
             DATE_HIGHLIGHT_END = "\u001B[0m",
@@ -24,30 +28,25 @@ public class TweetFormatter {
     public String oneTweetToStr(Status tweet, ShowTime showTime) {
         String retweetPart = "";
         if (tweet.isRetweet()) {
-            retweetPart = new StringBuilder().append("ретвитнул ").append(USER_HIGHLIGHT_BEGIN)
-                    .append("@").append(tweet.getRetweetedStatus().getUser().getScreenName())
-                    .append(USER_HIGHLIGHT_END).append(": ").toString();
+            retweetPart = "ретвитнул " + USER_HIGHLIGHT_BEGIN + "@"
+                    + tweet.getRetweetedStatus().getUser().getScreenName() + USER_HIGHLIGHT_END + ": ";
             if (retweetPart == null) {
                 retweetPart = "";
             }
         }
-        return new StringBuilder().append(
-                clauseStr(showTime == ShowTime.yes, DATE_HIGHLIGHT_BEGIN + "["
-                    + timeInReadableFormat(tweet.getCreatedAt()) + "]" + DATE_HIGHLIGHT_END + " "))
-                .append(USER_HIGHLIGHT_BEGIN).append("@").append(tweet.getUser().getScreenName())
-                .append(USER_HIGHLIGHT_END).append(": ").append(retweetPart).append(tweet.getText())
-                .append(
-                    clauseStr(tweet.isRetweeted(), " (" + tweet.getRetweetCount() + " ретвит"
-                    + calcNumEnding(new Long(tweet.getRetweetCount()), "", "а", "ов") + ")"))
-                .toString();
+        return clauseStr(showTime == ShowTime.yes, DATE_HIGHLIGHT_BEGIN + "["
+                + timeInReadableFormat(tweet.getCreatedAt()) + "]" + DATE_HIGHLIGHT_END + " ")
+                + USER_HIGHLIGHT_BEGIN + "@" + tweet.getUser().getScreenName() + USER_HIGHLIGHT_END + ": "
+                + retweetPart + tweet.getText()
+                + clauseStr(tweet.isRetweeted(), " (" + tweet.getRetweetCount() + " ретвит"
+                + calcNumEnding((long) tweet.getRetweetCount(), "", "а", "ов") + ")");
     }
 
     public String timeInReadableFormat(Date date) {
         final long ms2s = 1000L, s2m = 60L, m2h = 60L, h2d = 24L;
 
         LocalDateTime tweetTime = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime(),
-                nowTime = LocalDateTime.now();
-
+                nowTime = currentTime();
         long minuteDifference = ChronoUnit.MINUTES.between(tweetTime, nowTime);
         long hourDifference = ChronoUnit.HOURS.between(tweetTime, nowTime);
         long daysDifference = tweetTime.toLocalDate().until(nowTime.toLocalDate(), ChronoUnit.DAYS);
@@ -58,20 +57,17 @@ public class TweetFormatter {
         }
         long deltaHours = ChronoUnit.HOURS.between(tweetTime, nowTime);
         if (deltaHours == 0L) {
-            return new StringBuilder().append(deltaMinutes).append(" минут")
-                    .append(calcNumEnding(deltaMinutes, "у", "ы", "")).append(" назад").toString();
+            return String.valueOf(deltaMinutes) + " минут" + calcNumEnding(deltaMinutes, "у", "ы", "") + " назад";
         }
         long deltaDays = tweetTime.toLocalDate().until(nowTime.toLocalDate(), ChronoUnit.DAYS);
         if (deltaDays != 0L) {
             if (deltaDays == 1L) {
                 return "вчера";
             } else {
-                return new StringBuilder().append(deltaDays).append(" д")
-                        .append(calcNumEnding(deltaDays, "ень", "ня", "ней")).append(" назад").toString();
+                return String.valueOf(deltaDays) + " д" + calcNumEnding(deltaDays, "ень", "ня", "ней") + " назад";
             }
         }
-        return new StringBuilder().append(deltaHours).append(" час").append(calcNumEnding(deltaHours, "", "а", "ов"))
-                    .append(" назад").toString();
+        return String.valueOf(deltaHours) + " час" + calcNumEnding(deltaHours, "", "а", "ов") + " назад";
     }
 
     public String calcNumEnding(Long number, String p1, String p24, String p50) {
