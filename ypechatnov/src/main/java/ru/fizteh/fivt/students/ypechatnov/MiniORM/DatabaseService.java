@@ -40,7 +40,7 @@ public class DatabaseService<T, K> {
     final Field primaryKeyField;
 
     public T queryById(K key) throws java.sql.SQLException,
-            IllegalAccessException, InstantiationException, NoSuchRowException {
+            IllegalAccessException, InstantiationException, DatabaseException {
         List<T> list = calculateResultOfQuery(dataConverter.generateSelectOneByPrimaryKeyCommand(key));
         if (list.size() == 0) {
             return null;
@@ -72,19 +72,19 @@ public class DatabaseService<T, K> {
         }
     }
 
-    public void insert(T item) throws java.sql.SQLException {
+    public void insert(T item) throws java.sql.SQLException, DatabaseException {
         execute(dataConverter.generateInsertCommand(item));
     }
 
-    public void update(T item) throws java.sql.SQLException {
+    public void update(T item) throws java.sql.SQLException, DatabaseException {
         execute(dataConverter.generateUpdateCommand(item));
     }
 
-    public void delete(T item) throws java.sql.SQLException {
+    public void delete(T item) throws java.sql.SQLException, DatabaseException {
         execute(dataConverter.generateDeleteCommand(item));
     }
 
-    public void createTable() throws java.sql.SQLException {
+    public void createTable() throws java.sql.SQLException, DatabaseException {
         execute(dataConverter.generateCreateCommand());
     }
 
