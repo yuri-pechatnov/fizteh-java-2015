@@ -60,12 +60,13 @@ public class DatabaseService<T, K> {
             IllegalAccessException, InstantiationException {
         try (Connection conn = DriverManager.getConnection("jdbc:h2:~/" + databaseName)) {
             try (Statement stmt = conn.createStatement()) {
-                ResultSet set = stmt.executeQuery(command);
                 List<T> list = new ArrayList<T>();
-                while (set.next()) {
-                    T item = itemClass.newInstance();
-                    dataConverter.writeRow(set, item);
-                    list.add(item);
+                try (ResultSet set = stmt.executeQuery(command)) {
+                    while (set.next()) {
+                        T item = itemClass.newInstance();
+                        dataConverter.writeRow(set, item);
+                        list.add(item);
+                    }
                 }
                 return list;
             }

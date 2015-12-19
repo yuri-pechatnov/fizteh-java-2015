@@ -14,7 +14,7 @@ public class BlockingQueue<T> {
     public static class Query implements Comparable<Query> {
         public ReentrantLock lock = new ReentrantLock();
         public Condition cond = lock.newCondition();
-        public Integer count;
+        public final Integer count;
         public Boolean ready = false;
         public void setReady() {
             lock.lock();

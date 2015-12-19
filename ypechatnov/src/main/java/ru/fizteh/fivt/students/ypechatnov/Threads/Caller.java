@@ -11,17 +11,16 @@ import java.util.concurrent.locks.ReentrantLock;
  * Created by ura on 08.12.15.
  */
 public class Caller {
-    private static Integer amount;
     private static Integer currentIteration;
     private static Boolean currentAnswer;
     private static Lock lock = new ReentrantLock(true);
     private static Condition needWrite = lock.newCondition();
     private static CountDownLatch countDownLatch;
-    private static Thread[] threads;
+    private final static Object outputMutex = new Object();
 
     public static void main(String[] args) throws Exception {
-        amount = Integer.valueOf(args[0]);
-        threads = new Thread[amount];
+        Integer amount = Integer.valueOf(args[0]);
+        Thread[] threads = new Thread[amount];
         for (int i = 0; i < amount; i++) {
             threads[i] = new Thread(new Runnable() {
                 @Override
@@ -39,13 +38,13 @@ public class Caller {
                                 }
                             }
                             if (random.nextInt() % 10 == 0) {
-                                synchronized (System.out) {
+                                synchronized (outputMutex) {
                                     System.out.print("No(" + iteration + ") ");
                                     currentAnswer = false;
                                 }
                             }
                             else {
-                                synchronized (System.out) {
+                                synchronized (outputMutex) {
                                     System.out.print("Yes(" + iteration + ") ");
                                 }
                             }
@@ -66,7 +65,7 @@ public class Caller {
             thread.start();
         }
         while (true) {
-            synchronized (System.out) {
+            synchronized (outputMutex) {
                 System.out.println("Are you ready?");
             }
             lock.lock();
@@ -79,7 +78,7 @@ public class Caller {
                 lock.unlock();
             }
             countDownLatch.await();
-            synchronized (System.out) {
+            synchronized (outputMutex) {
                 System.out.println("");
             }
             if (currentAnswer) {
